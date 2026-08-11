@@ -160,6 +160,5 @@ size field is used to allocate.
 ./gradlew :knowledge:iosSimulatorArm64Test    # needs macOS
 ```
 
-The database-backed tests are excluded from the Android host run: the bundled SQLite driver ships
-Android ABI binaries only, so a host JVM cannot open a connection. The same common code is covered
-by the desktop and iOS runs.
+The whole suite runs on every target. Android host tests pull in the host build of the bundled
+SQLite driver, whose Android artifact carries device binaries only.

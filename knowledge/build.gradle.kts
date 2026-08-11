@@ -74,6 +74,11 @@ kotlin {
         implementation(libs.ktor.client.java)
       }
     }
+    getByName("androidHostTest") {
+      // The Android artifact of the bundled driver carries device binaries only, so a host JVM
+      // cannot open a connection with it. Its jvm build puts a loadable one on the test classpath.
+      dependencies { implementation(libs.androidx.sqlite.bundled.jvm) }
+    }
     iosMain.dependencies {
       implementation(libs.androidx.sqlite.bundled)
       implementation(libs.ktor.client.darwin)
@@ -88,15 +93,6 @@ dependencies {
 }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
-
-// androidx.sqlite:sqlite-bundled ships Android ABI binaries only, so the database-backed tests
-// cannot open a connection on a host JVM. They run against the desktop and iOS targets, compiled
-// from the same common source set.
-tasks.withType<Test>().configureEach {
-  if (name == "testAndroidHostTest") {
-    listOf("*Knowledge*Test").forEach(filter::excludeTestsMatching)
-  }
-}
 
 mavenPublishing {
   publishToMavenCentral()
