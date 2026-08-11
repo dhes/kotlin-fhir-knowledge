@@ -46,6 +46,23 @@ is listed in the following table:
 The web targets are unsupported because the library keeps its package cache on the device file
 system, which the browser does not offer.
 
+### Why okio rather than kotlinx-io
+
+kotlinx-io is the newer library and Ktor 3 already places it on the classpath, so it is the natural
+question. Measured against what this library needs, it is not yet a replacement:
+
+| | okio 3.17.0 | kotlinx-io 0.9.0 |
+|:---|:---|:---|
+| Gzip, which every FHIR NPM package needs | JVM and native | none published |
+| File system on JVM, Android and native | ✅ | ✅ |
+| File system in a browser | ❌ | ❌ — its web implementation calls Node's `fs` |
+| In-memory file system for tests | ✅ | ❌ |
+
+Adopting it today would remove working decompression from Android, desktop and iOS without adding
+a browser target. Worth revisiting once kotlinx-io publishes compression or a browser file system.
+Decompression is already declared as a platform-specific function, so a target that needs a
+different implementation costs one `actual` rather than a change to shared code.
+
 ## User guide
 
 ### Adding the library dependency to your project
