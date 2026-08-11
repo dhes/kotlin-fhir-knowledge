@@ -5,6 +5,8 @@
 [![Release](https://img.shields.io/maven-central/v/dev.ohs.fhir/fhir-knowledge-desktop?color=yellow&label=desktop)](https://central.sonatype.com/artifact/dev.ohs.fhir/fhir-knowledge-desktop)
 [![Release](https://img.shields.io/maven-central/v/dev.ohs.fhir/fhir-knowledge-iossimulatorarm64?color=yellow&label=iossimulatorarm64)](https://central.sonatype.com/artifact/dev.ohs.fhir/fhir-knowledge-iossimulatorarm64)
 [![Release](https://img.shields.io/maven-central/v/dev.ohs.fhir/fhir-knowledge-iosarm64?color=yellow&label=iosarm64)](https://central.sonatype.com/artifact/dev.ohs.fhir/fhir-knowledge-iosarm64)
+[![Release](https://img.shields.io/maven-central/v/dev.ohs.fhir/fhir-knowledge-wasm-js?color=yellow&label=wasm-js)](https://central.sonatype.com/artifact/dev.ohs.fhir/fhir-knowledge-wasm-js)
+[![Release](https://img.shields.io/maven-central/v/dev.ohs.fhir/fhir-knowledge-js?color=yellow&label=js)](https://central.sonatype.com/artifact/dev.ohs.fhir/fhir-knowledge-js)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A Kotlin Multiplatform library for managing HL7 FHIR R4 knowledge artifacts on device. It installs
@@ -40,11 +42,14 @@ is listed in the following table:
 | Android applications and libraries | `android`           | `-android`           | ✅       |
 | iOS (Apple silicon simulator)      | `iosSimulatorArm64` | `-iossimulatorarm64` | ✅       |
 | iOS (device)                       | `iosArm64`          | `-iosarm64`          | ✅       |
-| Kotlin/Wasm                        | `wasmJs`            | `-wasm-js`           | ❌       |
-| Kotlin/JS                          | `js`                | `-js`                | ❌       |
+| Kotlin/Wasm (browser)              | `wasmJs`            | `-wasm-js`           | ⚠️       |
+| Kotlin/JS (browser)                | `js`                | `-js`                | ⚠️       |
 
-The web targets are unsupported because the library keeps its package cache on the device file
-system, which the browser does not offer.
+The browser has no file system that okio implements and no gzip that any Kotlin library implements,
+so the web targets support a subset. The index persists to the Origin Private File System, and
+`index`, `import`, `loadResources` and `delete` work against a `FileSystem` you pass to
+`KnowledgeManager.create` — over bundled assets, for instance. `install` is unavailable, since
+unpacking a downloaded package needs gzip.
 
 ### Why okio rather than kotlinx-io
 
@@ -177,5 +182,7 @@ size field is used to allocate.
 ./gradlew :knowledge:iosSimulatorArm64Test    # needs macOS
 ```
 
-The whole suite runs on every target. Android host tests pull in the host build of the bundled
-SQLite driver, whose Android artifact carries device binaries only.
+The suite runs on Android, desktop and iOS. Android host tests pull in the host build of the
+bundled SQLite driver, whose Android artifact carries device binaries only. The web targets are
+verified by compiling the library and the suite against them; running the suite in a browser needs
+a cross-origin isolated page for the Origin Private File System, which Karma does not serve.

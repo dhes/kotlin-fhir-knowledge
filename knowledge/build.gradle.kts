@@ -1,3 +1,7 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+import org.jetbrains.kotlin.gradle.plugin.KotlinHierarchyTemplate
+
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.android.kotlin.multiplatform.library)
@@ -31,8 +35,31 @@ kotlin {
   iosArm64()
   iosSimulatorArm64()
 
-  // The library caches FHIR NPM packages on disk, and okio publishes neither FileSystem.SYSTEM nor
-  // GzipSource for js/wasmJs, so there are no web targets.
+  // useEsModules() is required so that the SQLite-WASM Web Worker, loaded via
+  // `new Worker(new URL(..., import.meta.url), { type: "module" })`, resolves as an ES module.
+  js {
+    browser()
+    useEsModules()
+  }
+
+  @OptIn(ExperimentalWasmDsl::class)
+  wasmJs {
+    browser()
+    useEsModules()
+  }
+
+  // Downloading and unpacking a package needs gzip, which the web targets do not implement. This
+  // group gives the targets that do one place for that code and its tests.
+  @OptIn(ExperimentalKotlinGradlePluginApi::class)
+  applyHierarchyTemplate(KotlinHierarchyTemplate.default) {
+    common {
+      group("nonWeb") {
+        withAndroidTarget()
+        withIos()
+        withJvm()
+      }
+    }
+  }
 
   targets.configureEach {
     compilations.configureEach {
@@ -64,6 +91,11 @@ kotlin {
         implementation(libs.okio.fakefilesystem)
       }
     }
+    val androidMain by getting {
+      // withAndroidTarget() does not match the AGP multiplatform library target, so the group has
+      // to be joined by hand.
+      dependsOn(get("nonWebMain"))
+    }
     androidMain.dependencies {
       implementation(libs.androidx.sqlite.bundled)
       implementation(libs.ktor.client.okhttp)
@@ -75,6 +107,7 @@ kotlin {
       }
     }
     getByName("androidHostTest") {
+      dependsOn(get("nonWebTest"))
       // The Android artifact of the bundled driver carries device binaries only, so a host JVM
       // cannot open a connection with it. Its jvm build puts a loadable one on the test classpath.
       dependencies { implementation(libs.androidx.sqlite.bundled.jvm) }
@@ -83,13 +116,25 @@ kotlin {
       implementation(libs.androidx.sqlite.bundled)
       implementation(libs.ktor.client.darwin)
     }
+    webMain.dependencies {
+      // Exposes WebWorkerSQLiteDriver to the actual in Platform.kt.
+      api(libs.androidx.sqlite.web)
+      implementation(libs.kotlinx.browser)
+      implementation(libs.ktor.client.js)
+      // Local npm module: worker.js and @sqlite.org/sqlite-wasm (see src/webMain/npm).
+      implementation(
+        npm(
+          "sqlite-wasm-worker",
+          layout.projectDirectory.dir("src/webMain/npm/sqlite-wasm-worker").asFile,
+        )
+      )
+    }
   }
 }
 
 dependencies {
-  listOf("kspAndroid", "kspDesktop", "kspIosArm64", "kspIosSimulatorArm64").forEach {
-    add(it, libs.androidx.room3.compiler)
-  }
+  listOf("kspAndroid", "kspDesktop", "kspIosArm64", "kspIosSimulatorArm64", "kspJs", "kspWasmJs")
+    .forEach { add(it, libs.androidx.room3.compiler) }
 }
 
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
