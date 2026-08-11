@@ -16,6 +16,7 @@
 package dev.ohs.fhir.knowledge.npm
 
 import dev.ohs.fhir.knowledge.FhirNpmPackage
+import dev.ohs.fhir.knowledge.gunzip
 import dev.ohs.fhir.knowledge.ioDispatcher
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
@@ -26,7 +27,6 @@ import io.ktor.utils.io.readAvailable
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.withContext
 import okio.FileSystem
-import okio.GzipSource
 import okio.IOException
 import okio.Path
 import okio.buffer
@@ -82,9 +82,9 @@ internal class HttpNpmPackageDownloader(
     }
   }
 
-  private fun extractTgzFile(tgzFile: Path, outputFolder: Path) {
+  private suspend fun extractTgzFile(tgzFile: Path, outputFolder: Path) {
     fileSystem.source(tgzFile).use { source ->
-      GzipSource(source).buffer().use { archive ->
+      gunzip(source).buffer().use { archive ->
         archive.forEachTarEntry { entry, content ->
           val outputFile = outputFolder.resolveEntry(entry.name)
           if (entry.isDirectory) {

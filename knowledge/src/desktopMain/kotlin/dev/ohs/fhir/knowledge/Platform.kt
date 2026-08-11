@@ -23,8 +23,10 @@ import java.io.File
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import okio.FileSystem
+import okio.GzipSource
 import okio.Path
 import okio.Path.Companion.toPath
+import okio.Source
 
 internal actual fun knowledgeDatabaseBuilder(
   platformContext: Any,
@@ -40,6 +42,8 @@ internal actual fun knowledgeDatabaseBuilder(
     .setQueryCoroutineContext(ioDispatcher)
 
 internal actual fun defaultNpmDirectory(platformContext: Any): Path = storageDirectory()
+
+internal actual suspend fun gunzip(source: Source): Source = GzipSource(source)
 
 internal actual val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 

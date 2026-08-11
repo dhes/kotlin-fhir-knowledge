@@ -20,6 +20,20 @@ import dev.ohs.fhir.knowledge.db.KnowledgeDatabase
 import kotlinx.coroutines.CoroutineDispatcher
 import okio.FileSystem
 import okio.Path
+import okio.Source
+
+/**
+ * Decompresses a gzip stream, the form in which every FHIR NPM package is served.
+ *
+ * The implementation is platform-specific because no Kotlin I/O library provides gzip on every
+ * target. okio provides it for the JVM and the native targets but not for the web ones, where
+ * `DecompressionStream` is the only option and is asynchronous. Declaring this function `suspend`
+ * accommodates such an implementation at no cost to the streaming ones.
+ *
+ * @return a source over the decompressed bytes. Whether they are inflated lazily or up front is
+ *   platform-specific.
+ */
+internal expect suspend fun gunzip(source: Source): Source
 
 /**
  * Returns a builder for the metadata database, backed by the bundled SQLite driver.
