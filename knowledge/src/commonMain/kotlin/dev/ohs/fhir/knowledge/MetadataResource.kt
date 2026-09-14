@@ -17,6 +17,7 @@ package dev.ohs.fhir.knowledge
 
 import dev.ohs.fhir.model.r4.Resource
 import dev.ohs.fhir.model.r4.terminologies.ResourceType
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
@@ -44,7 +45,7 @@ internal class MetadataResource(
  * supertype to type-check against, so [METADATA_RESOURCE_TYPES] stands in for one.
  */
 internal fun Json.decodeMetadataResourceOrNull(json: String): MetadataResource? {
-  val element = parseToJsonElement(json) as? JsonObject ?: return null
+  val element = parseToJsonElementOrNull(json) as? JsonObject ?: return null
   val code = element.string("resourceType") ?: return null
   if (code !in METADATA_RESOURCE_TYPES) return null
   return MetadataResource(
@@ -55,6 +56,13 @@ internal fun Json.decodeMetadataResourceOrNull(json: String): MetadataResource? 
     resource = decodeFromJsonElement(Resource.serializer(), element),
   )
 }
+
+private fun Json.parseToJsonElementOrNull(json: String) =
+  try {
+    parseToJsonElement(json)
+  } catch (e: SerializationException) {
+    null
+  }
 
 private fun JsonObject.string(key: String) = get(key)?.jsonPrimitive?.contentOrNull
 

@@ -95,10 +95,13 @@ internal constructor(
    * metadata of the FHIR resources it holds for later retrieval.
    *
    * FHIR NPM packages already present in the database are skipped.
+   *
+   * @return what the import indexed, skipped and failed to read. A package already present in the
+   *   database returns an empty result.
    */
-  suspend fun import(fhirNpmPackage: FhirNpmPackage, rootDirectory: Path) {
+  suspend fun import(fhirNpmPackage: FhirNpmPackage, rootDirectory: Path): ImportResult {
     if (knowledgeDao.getImplementationGuide(fhirNpmPackage.name, fhirNpmPackage.version) != null) {
-      return
+      return ImportResult(indexed = 0, skipped = 0, failed = emptyList())
     }
     // TODO: copy the files into storage the knowledge manager owns?
     val implementationGuideId =
@@ -111,11 +114,26 @@ internal constructor(
           rootDirectory,
         )
       )
-    val files = withContext(ioDispatcher) { fileSystem.listOrNull(rootDirectory) } ?: return
+    val files =
+      withContext(ioDispatcher) { fileSystem.listOrNull(rootDirectory) }
+        ?: return ImportResult(indexed = 0, skipped = 0, failed = emptyList())
+    var indexed = 0
+    var skipped = 0
+    val failed = mutableListOf<Path>()
     files.sorted().forEach { file ->
-      // Skip files that hold no metadata resource rather than raising: an unpacked NPM package
-      // also carries other kinds of file, package.json among them.
-      val resource = readMetadataResourceOrNull(file) ?: return@forEach
+      val resource =
+        try {
+          readMetadataResourceOrNull(file)
+        } catch (e: Exception) {
+          Logger.w(e) { "Unable to load resource from $file" }
+          failed += file
+          return@forEach
+        }
+      if (resource == null) {
+        Logger.d { "Skipped $file, which holds no knowledge artifact" }
+        skipped++
+        return@forEach
+      }
       knowledgeDao.insertResource(
         implementationGuideId,
         ResourceMetadataEntity(
@@ -127,7 +145,9 @@ internal constructor(
           file,
         ),
       )
+      indexed++
     }
+    return ImportResult(indexed, skipped, failed)
   }
 
   /**
@@ -259,15 +279,15 @@ internal constructor(
   }
 
   /**
-   * Reads the file as a FHIR metadata resource in JSON, or returns null if it holds anything else.
+   * Reads the file as a FHIR metadata resource in JSON, or returns null if it is a directory or
+   * holds anything else.
    */
   private suspend fun readMetadataResourceOrNull(file: Path): MetadataResource? =
     withContext(ioDispatcher) {
-      try {
-        json.decodeMetadataResourceOrNull(fileSystem.read(file) { readUtf8() })
-      } catch (e: Exception) {
-        Logger.e(e) { "Unable to load resource from $file" }
+      if (fileSystem.metadataOrNull(file)?.isDirectory == true) {
         null
+      } else {
+        json.decodeMetadataResourceOrNull(fileSystem.read(file) { readUtf8() })
       }
     }
 

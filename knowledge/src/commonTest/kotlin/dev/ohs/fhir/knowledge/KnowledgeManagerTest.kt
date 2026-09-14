@@ -90,6 +90,21 @@ class KnowledgeManagerTest {
   }
 
   @Test
+  fun shouldReportWhatAnImportIndexedSkippedAndFailed() = runTest {
+    val broken = dataFolder / "Library-Broken.json"
+    writeResource(broken, metadataResource("Library", "Broken", "$ANC_CDS/Library/Broken", VERSION))
+    writeResource(
+      dataFolder / "example" / "Patient-example.json",
+      """{"resourceType":"Patient","id":"example"}""",
+    )
+    fileSystem.write(dataFolder / ".index.db") { writeUtf8("SQLite format 3") }
+
+    val result = knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    assertEquals(ImportResult(indexed = 6, skipped = 3, failed = listOf(broken)), result)
+  }
+
+  @Test
   fun shouldDeleteTheFilesAndEntriesOfAnImplementationGuide() = runTest {
     knowledgeManager.import(fhirNpmPackage, dataFolder)
 
