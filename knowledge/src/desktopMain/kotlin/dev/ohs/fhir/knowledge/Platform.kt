@@ -35,13 +35,14 @@ internal actual fun knowledgeDatabaseBuilder(
   (if (inMemory) {
       Room.inMemoryDatabaseBuilder<KnowledgeDatabase>()
     } else {
-      val storageDirectory = File(storageDirectory().toString()).apply { mkdirs() }
+      val storageDirectory = File(storageDirectory(platformContext).toString()).apply { mkdirs() }
       Room.databaseBuilder<KnowledgeDatabase>(File(storageDirectory, DATABASE_NAME).absolutePath)
     })
     .setDriver(BundledSQLiteDriver())
     .setQueryCoroutineContext(ioDispatcher)
 
-internal actual fun defaultNpmDirectory(platformContext: Any): Path = storageDirectory()
+internal actual fun defaultNpmDirectory(platformContext: Any): Path =
+  storageDirectory(platformContext)
 
 internal actual suspend fun gunzip(source: Source): Source = GzipSource(source)
 
@@ -49,8 +50,11 @@ internal actual val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 
 internal actual val systemFileSystem: FileSystem = FileSystem.SYSTEM
 
-private fun storageDirectory(): Path =
-  (System.getProperty("user.home") ?: ".").toPath() / STORAGE_DIRECTORY_NAME
+internal fun storageDirectory(platformContext: Any): Path {
+  val root = (System.getProperty("user.home") ?: ".").toPath() / STORAGE_DIRECTORY_NAME
+  val applicationId = (platformContext as? String)?.trim()?.takeIf { it.isNotEmpty() }
+  return if (applicationId != null) root / applicationId else root
+}
 
 private const val DATABASE_NAME = "knowledge.db"
 private const val STORAGE_DIRECTORY_NAME = ".fhir-knowledge"

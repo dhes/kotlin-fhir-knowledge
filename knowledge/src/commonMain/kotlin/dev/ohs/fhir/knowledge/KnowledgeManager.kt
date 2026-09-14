@@ -40,7 +40,8 @@ import okio.Path
  * - an NPM package downloader, fetching the knowledge artifacts from an NPM package server.
  *
  * Knowledge artifacts are scoped to the application. Two applications using the knowledge manager
- * do not share a set of knowledge artifacts.
+ * do not share a set of knowledge artifacts. On desktop, this holds only for applications that pass
+ * their application id to [create].
  *
  * See [Clinical Reasoning](https://hl7.org/fhir/R4/clinicalreasoning-module.html) for the formal
  * definition of a knowledge artifact. This implementation treats the FHIR R4 metadata resources as
@@ -291,7 +292,9 @@ internal constructor(
      * ```
      *
      * @param platformContext the application `Context` on Android, where it locates both the
-     *   database and the package cache. Ignored on the other platforms, which have an OS-provided
+     *   database and the package cache. On desktop, the application id, which scopes both under
+     *   `~/.fhir-knowledge/<application id>`; without one, every desktop application shares
+     *   `~/.fhir-knowledge`. Ignored on iOS and the web, which have an OS-provided
      *   application-scoped directory.
      * @param inMemory whether the index lives only as long as the process, rather than in a
      *   database file. Downloaded packages are written to disk either way.

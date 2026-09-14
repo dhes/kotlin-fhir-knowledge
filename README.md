@@ -113,11 +113,12 @@ dependencies {
 
 ### Installing and resolving knowledge artifacts
 
-Create a `KnowledgeManager` once at startup. On Android pass the application `Context`; on the other
-platforms pass `Unit` (the default).
+Create a `KnowledgeManager` once at startup. On Android pass the application `Context`; on desktop
+pass the application id, which keeps the database and package cache under
+`~/.fhir-knowledge/<application id>`; on iOS and the web pass `Unit` (the default).
 
 ```kotlin
-val knowledgeManager = KnowledgeManager.create(platformContext) // Android: applicationContext
+val knowledgeManager = KnowledgeManager.create(platformContext) // Android: applicationContext; desktop: the application id
 
 // Downloads the package and its transitive dependencies, then indexes what they hold.
 knowledgeManager.install(FhirNpmPackage("anc-cds", "0.3.0"))

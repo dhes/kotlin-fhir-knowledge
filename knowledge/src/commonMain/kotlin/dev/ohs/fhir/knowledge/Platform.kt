@@ -38,7 +38,8 @@ internal expect suspend fun gunzip(source: Source): Source
 /**
  * Returns a builder for the metadata database, backed by the bundled SQLite driver.
  *
- * @param platformContext the application `Context` on Android; ignored on the other platforms.
+ * @param platformContext the application `Context` on Android and the application id on desktop;
+ *   ignored on the other platforms.
  * @param inMemory whether the database lives only for as long as the process does.
  */
 internal expect fun knowledgeDatabaseBuilder(
@@ -50,7 +51,8 @@ internal expect fun knowledgeDatabaseBuilder(
  * Returns the directory the knowledge manager stores downloaded NPM packages under, unless the
  * caller names one of its own.
  *
- * @param platformContext the application `Context` on Android; ignored on the other platforms.
+ * @param platformContext the application `Context` on Android and the application id on desktop;
+ *   ignored on the other platforms.
  */
 internal expect fun defaultNpmDirectory(platformContext: Any): Path
 
