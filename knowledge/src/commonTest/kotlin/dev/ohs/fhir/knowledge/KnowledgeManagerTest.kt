@@ -80,6 +80,16 @@ class KnowledgeManagerTest {
   }
 
   @Test
+  fun shouldSkipAnImplementationGuideThatIsAlreadyImported() = runTest {
+    knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    assertEquals(1, knowledgeDb.knowledgeDao().getImplementationGuides().size)
+    assertEquals(6, knowledgeDb.knowledgeDao().getResources().size)
+  }
+
+  @Test
   fun shouldDeleteTheFilesAndEntriesOfAnImplementationGuide() = runTest {
     knowledgeManager.import(fhirNpmPackage, dataFolder)
 

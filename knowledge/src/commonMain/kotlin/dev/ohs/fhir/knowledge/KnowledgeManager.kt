@@ -96,6 +96,9 @@ internal constructor(
    * FHIR NPM packages already present in the database are skipped.
    */
   suspend fun import(fhirNpmPackage: FhirNpmPackage, rootDirectory: Path) {
+    if (knowledgeDao.getImplementationGuide(fhirNpmPackage.name, fhirNpmPackage.version) != null) {
+      return
+    }
     // TODO: copy the files into storage the knowledge manager owns?
     val implementationGuideId =
       knowledgeDao.insert(
