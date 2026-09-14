@@ -83,10 +83,13 @@ repositories {
 }
 ```
 
+The knowledge manager returns resources from `dev.ohs.fhir:fhir-model`, so add it next to
+`fhir-knowledge` in the module that uses them.
+
 #### Kotlin Multiplatform projects
 
-Add the dependency to the shared `commonMain` source set within the `kotlin` block of the module's
-`build.gradle.kts` file (e.g. `composeApp/build.gradle.kts` or `shared/build.gradle.kts`).
+Add the dependencies to the shared `commonMain` source set within the `kotlin` block of the
+module's `build.gradle.kts` file (e.g. `composeApp/build.gradle.kts` or `shared/build.gradle.kts`).
 
 ```
 // e.g., composeApp/build.gradle.kts or shared/build.gradle.kts
@@ -94,6 +97,7 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("dev.ohs.fhir:fhir-knowledge:2.0.0-alpha01")
+            implementation("dev.ohs.fhir:fhir-model:1.0.0-rc03")
         }
     }
 }
@@ -101,13 +105,14 @@ kotlin {
 
 #### Android projects
 
-Add the dependency to the `dependencies` block in the module's `build.gradle.kts` file (e.g.
+Add the dependencies to the `dependencies` block in the module's `build.gradle.kts` file (e.g.
 `app/build.gradle.kts`).
 
 ```
 // e.g., app/build.gradle.kts
 dependencies {
     implementation("dev.ohs.fhir:fhir-knowledge:2.0.0-alpha01")
+    implementation("dev.ohs.fhir:fhir-model:1.0.0-rc03")
 }
 ```
 
