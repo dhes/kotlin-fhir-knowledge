@@ -141,7 +141,13 @@ ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 
 mavenPublishing {
   publishToMavenCentral()
-  signAllPublications()
+  if (
+    listOf("signingInMemoryKey", "signing.keyId", "signing.gnupg.keyName").any {
+      providers.gradleProperty(it).isPresent
+    }
+  ) {
+    signAllPublications()
+  }
   coordinates(mavenGroupId, mavenArtifactId, mavenVersion)
 
   pom {
