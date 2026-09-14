@@ -35,5 +35,5 @@ internal object DbTypeConverters {
 
   @TypeConverter fun codeToResourceType(code: String): ResourceType = ResourceType.fromCode(code)
 
-  @TypeConverter fun resourceTypeToCode(resourceType: ResourceType): String = resourceType.getCode()
+  @TypeConverter fun resourceTypeToCode(resourceType: ResourceType): String = resourceType.code
 }
