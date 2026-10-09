@@ -136,7 +136,8 @@ val library =
 ```
 
 `import` indexes a package that is already unpacked, and `index` records a single artifact held in
-an immutable file, such as one bundled with the application.
+an immutable file, such as one bundled with the application. `delete` removes the files of a package
+that `install` downloaded; a directory passed to `import` is left as it is.
 
 A file is indexed when its `resourceType` is one of the 29 FHIR R4 metadata resources —
 `ActivityDefinition`, `Library`, `Measure`, `PlanDefinition`, `Questionnaire`, `StructureDefinition`,

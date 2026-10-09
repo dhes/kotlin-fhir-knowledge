@@ -22,7 +22,6 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -105,14 +104,14 @@ class KnowledgeManagerTest {
   }
 
   @Test
-  fun shouldDeleteTheFilesAndEntriesOfAnImplementationGuide() = runTest {
+  fun shouldDeleteTheEntriesOfAnImportedImplementationGuideAndKeepItsFiles() = runTest {
     knowledgeManager.import(fhirNpmPackage, dataFolder)
 
     knowledgeManager.delete(fhirNpmPackage)
 
     assertTrue(knowledgeDb.knowledgeDao().getImplementationGuides().isEmpty())
     assertTrue(knowledgeDb.knowledgeDao().getResources().isEmpty())
-    assertFalse(fileSystem.exists(dataFolder))
+    assertTrue(fileSystem.exists(dataFolder / "Library-WHOCommon.json"))
   }
 
   @Test

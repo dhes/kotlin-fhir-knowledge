@@ -263,18 +263,25 @@ internal constructor(
     return Pair(parts[0], parts[1])
   }
 
-  /** Deletes the given implementation guides, cleaning up their files. */
+  /**
+   * Deletes the given implementation guides.
+   *
+   * The files of an implementation guide are deleted only when they are in the package cache. A
+   * directory passed to [import] is left as it is.
+   */
   suspend fun delete(vararg igDependencies: FhirNpmPackage) {
     igDependencies.forEach { igDependency ->
       val igEntity = knowledgeDao.getImplementationGuide(igDependency.name, igDependency.version)
       if (igEntity != null) {
         knowledgeDao.deleteImplementationGuide(igDependency.name, igDependency.version)
-        withContext(ioDispatcher) {
-          try {
-            fileSystem.deleteRecursively(igEntity.rootDirectory, mustExist = false)
-          } catch (e: IOException) {
-            // A directory that will not delete must not cost the remaining guides their turn.
-            Logger.w(e) { "Unable to delete ${igEntity.rootDirectory}" }
+        if (npmFileManager.containsPath(igEntity.rootDirectory)) {
+          withContext(ioDispatcher) {
+            try {
+              fileSystem.deleteRecursively(igEntity.rootDirectory, mustExist = false)
+            } catch (e: IOException) {
+              // A directory that will not delete must not cost the remaining guides their turn.
+              Logger.w(e) { "Unable to delete ${igEntity.rootDirectory}" }
+            }
           }
         }
       }

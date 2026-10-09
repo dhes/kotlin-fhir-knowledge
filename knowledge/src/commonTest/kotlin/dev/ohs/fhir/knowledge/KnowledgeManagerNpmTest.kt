@@ -19,6 +19,7 @@ import dev.ohs.fhir.knowledge.db.inMemoryKnowledgeDatabase
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -94,6 +95,16 @@ class KnowledgeManagerNpmTest {
     knowledgeManager.install(PACKAGE_3.copy(canonical = CANONICAL))
 
     assertEquals(CANONICAL, implementationGuideUrl(PACKAGE_3))
+  }
+
+  @Test
+  fun shouldDeleteTheFilesOfAnInstalledPackage() = runTest {
+    knowledgeManager.install(PACKAGE_3)
+
+    knowledgeManager.delete(PACKAGE_3)
+
+    assertTrue(knowledgeDb.knowledgeDao().getImplementationGuides().isEmpty())
+    assertFalse(fileSystem.exists(packageFolder(PACKAGE_3) / "package"))
   }
 
   private suspend fun implementationGuideUrl(fhirNpmPackage: FhirNpmPackage) =
