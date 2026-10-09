@@ -52,7 +52,7 @@ internal class HttpNpmPackageDownloader(
   override suspend fun downloadPackage(fhirNpmPackage: FhirNpmPackage, packageFolder: Path) {
     val packageName = fhirNpmPackage.name
     val version = fhirNpmPackage.version
-    val response = client.get("$packageServerUrl$packageName/$version")
+    val response = raisingOkioIOException { client.get("$packageServerUrl$packageName/$version") }
 
     if (!response.status.isSuccess()) {
       throw IOException("Unexpected code ${response.status}")
@@ -75,12 +75,23 @@ internal class HttpNpmPackageDownloader(
     val buffer = ByteArray(BUFFER_SIZE)
     fileSystem.sink(file).buffer().use { sink ->
       while (true) {
-        val bytesRead = channel.readAvailable(buffer, 0, buffer.size)
+        val bytesRead = raisingOkioIOException { channel.readAvailable(buffer, 0, buffer.size) }
         if (bytesRead == -1) break
         sink.write(buffer, 0, bytesRead)
       }
     }
   }
+
+  /**
+   * Runs a Ktor call, raising the IOException of okio where Ktor raises the one of kotlinx-io. The
+   * two are the same class on the JVM only.
+   */
+  private inline fun <T> raisingOkioIOException(block: () -> T): T =
+    try {
+      block()
+    } catch (e: kotlinx.io.IOException) {
+      throw IOException(e.message, e)
+    }
 
   private suspend fun extractTgzFile(tgzFile: Path, outputFolder: Path) {
     fileSystem.source(tgzFile).use { source ->

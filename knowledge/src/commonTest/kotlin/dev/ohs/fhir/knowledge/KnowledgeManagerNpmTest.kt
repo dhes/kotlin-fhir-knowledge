@@ -19,9 +19,11 @@ import dev.ohs.fhir.knowledge.db.inMemoryKnowledgeDatabase
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -76,6 +78,24 @@ class KnowledgeManagerNpmTest {
     knowledgeManager.install(PACKAGE_1)
 
     assertTrue(downloadedPackages.isEmpty())
+  }
+
+  @Test
+  fun shouldNotInstallAPackageWhoseDownloadRaisesAnIOException() = runTest {
+    val knowledgeManager =
+      knowledgeManager(fileSystem, knowledgeDb) { _, _ -> throw IOException("Unexpected code 404") }
+
+    knowledgeManager.install(PACKAGE_3)
+
+    assertTrue(knowledgeDb.knowledgeDao().getImplementationGuides().isEmpty())
+  }
+
+  @Test
+  fun shouldRaiseWhatADownloadRaisesOtherThanAnIOException() = runTest {
+    val knowledgeManager =
+      knowledgeManager(fileSystem, knowledgeDb) { _, _ -> throw UnsupportedOperationException() }
+
+    assertFailsWith<UnsupportedOperationException> { knowledgeManager.install(PACKAGE_3) }
   }
 
   @Test

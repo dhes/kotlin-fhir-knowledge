@@ -95,6 +95,18 @@ class HttpNpmPackageDownloaderTest {
   }
 
   @Test
+  fun shouldRaiseAnIOExceptionWhenTheRequestFails() = runTest {
+    val downloader = downloader(MockEngine { throw kotlinx.io.IOException("Connection refused") })
+
+    assertFailsWith<IOException> {
+      downloader.downloadPackage(
+        FhirNpmPackage(PACKAGE_ID, VERSION),
+        npmFileManager.getPackageDir(PACKAGE_ID, VERSION),
+      )
+    }
+  }
+
+  @Test
   fun shouldRejectAnEntryThatEscapesThePackageDirectory() = runTest {
     val downloader = downloader(MockEngine { respond(PATH_TRAVERSAL_TGZ) })
     val packageDir = npmFileManager.getPackageDir(PACKAGE_ID, VERSION)

@@ -63,7 +63,8 @@ internal constructor(
    * transitive dependencies. The packages are unpacked into a directory the knowledge manager owns,
    * and the resources they hold are indexed in the database for later retrieval.
    *
-   * FHIR NPM packages already present in the database are skipped.
+   * FHIR NPM packages already present in the database are skipped. A package whose download raises
+   * an [IOException] is logged and not installed.
    */
   suspend fun install(vararg fhirNpmPackages: FhirNpmPackage) {
     fhirNpmPackages
@@ -76,7 +77,7 @@ internal constructor(
               npmFileManager.getPackageDir(it.name, it.version),
             )
           }
-        } catch (e: Exception) {
+        } catch (e: IOException) {
           Logger.w(e) { "Unable to download package ${it.name} ${it.version}" }
         }
         try {
