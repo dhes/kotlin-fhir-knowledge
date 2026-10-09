@@ -28,7 +28,9 @@ import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.runTest
 import okio.ByteString.Companion.encodeUtf8
 import okio.IOException
@@ -116,6 +118,15 @@ class HttpNpmPackageDownloaderTest {
     }
 
     assertTrue(fileSystem.list(CACHE_ROOT).none { it.name == "escaped.json" })
+  }
+
+  @Test
+  fun shouldCloseTheHttpClient() {
+    val client = HttpClient(MockEngine { respond(NPM_PACKAGE_TGZ) })
+
+    HttpNpmPackageDownloader(PACKAGE_SERVER, fileSystem, client).close()
+
+    assertFalse(client.isActive)
   }
 
   private fun downloader(engine: MockEngine) =

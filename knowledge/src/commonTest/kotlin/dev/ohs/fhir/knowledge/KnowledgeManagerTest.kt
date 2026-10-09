@@ -16,11 +16,13 @@
 package dev.ohs.fhir.knowledge
 
 import dev.ohs.fhir.knowledge.db.inMemoryKnowledgeDatabase
+import dev.ohs.fhir.knowledge.npm.NpmPackageDownloader
 import dev.ohs.fhir.model.r4.Library
 import dev.ohs.fhir.model.r4.PlanDefinition
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
@@ -205,6 +207,34 @@ class KnowledgeManagerTest {
     assertFailsWith<IllegalArgumentException> {
       knowledgeManager.loadResources("$WHO_COMMON_URL|$VERSION|extra")
     }
+  }
+
+  @Test
+  fun shouldCloseTheDatabase() = runTest {
+    knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    knowledgeManager.close()
+
+    assertFails { knowledgeManager.loadResources(WHO_COMMON_URL) }
+  }
+
+  @Test
+  fun shouldCloseADownloaderThatCanBeClosed() {
+    val downloader =
+      object : NpmPackageDownloader, AutoCloseable {
+        var closed = false
+
+        override suspend fun downloadPackage(fhirNpmPackage: FhirNpmPackage, packageFolder: Path) =
+          error("no download expected")
+
+        override fun close() {
+          closed = true
+        }
+      }
+
+    knowledgeManager(fileSystem, knowledgeDb, downloader).close()
+
+    assertTrue(downloader.closed)
   }
 
   @Test

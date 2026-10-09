@@ -43,6 +43,9 @@ import okio.Path
  * do not share a set of knowledge artifacts. On desktop, this holds only for applications that pass
  * their application id to [create].
  *
+ * [close] the knowledge manager when the application is done with it. That closes the database and
+ * the HTTP client packages are downloaded with.
+ *
  * See [Clinical Reasoning](https://hl7.org/fhir/R4/clinicalreasoning-module.html) for the formal
  * definition of a knowledge artifact. This implementation treats the FHIR R4 metadata resources as
  * the knowledge artifacts, which is a slightly different set from the resources implementing the
@@ -50,11 +53,11 @@ import okio.Path
  */
 class KnowledgeManager
 internal constructor(
-  knowledgeDatabase: KnowledgeDatabase,
+  private val knowledgeDatabase: KnowledgeDatabase,
   private val fileSystem: FileSystem,
   private val npmFileManager: NpmFileManager,
   private val npmPackageDownloader: NpmPackageDownloader,
-) {
+) : AutoCloseable {
   private val knowledgeDao = knowledgeDatabase.knowledgeDao()
   private val json = Json { ignoreUnknownKeys = true }
 
@@ -288,6 +291,12 @@ internal constructor(
         }
       }
     }
+  }
+
+  /** Closes the database and the NPM package downloader. */
+  override fun close() {
+    (npmPackageDownloader as? AutoCloseable)?.close()
+    knowledgeDatabase.close()
   }
 
   /**

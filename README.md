@@ -118,9 +118,10 @@ dependencies {
 
 ### Installing and resolving knowledge artifacts
 
-Create a `KnowledgeManager` once at startup. On Android pass the application `Context`; on desktop
-pass the application id, which keeps the database and package cache under
-`~/.fhir-knowledge/<application id>`; on iOS and the web pass `Unit` (the default).
+Create a `KnowledgeManager` once at startup, and `close()` it when the application is done with it.
+On Android pass the application `Context`; on desktop pass the application id, which keeps the
+database and package cache under `~/.fhir-knowledge/<application id>`; on iOS and the web pass
+`Unit` (the default).
 
 ```kotlin
 val knowledgeManager = KnowledgeManager.create(platformContext) // Android: applicationContext; desktop: the application id

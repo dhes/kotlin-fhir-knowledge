@@ -46,7 +46,7 @@ internal class HttpNpmPackageDownloader(
   private val packageServerUrl: String,
   private val fileSystem: FileSystem,
   private val client: HttpClient = HttpClient(),
-) : NpmPackageDownloader {
+) : NpmPackageDownloader, AutoCloseable {
 
   @Throws(IOException::class, CancellationException::class)
   override suspend fun downloadPackage(fhirNpmPackage: FhirNpmPackage, packageFolder: Path) {
@@ -69,6 +69,11 @@ internal class HttpNpmPackageDownloader(
         fileSystem.delete(tgzFile, mustExist = false)
       }
     }
+  }
+
+  /** Closes the [client]. */
+  override fun close() {
+    client.close()
   }
 
   private suspend fun saveResponseToFile(channel: ByteReadChannel, file: Path) {
