@@ -99,28 +99,22 @@ internal constructor(
    *
    * FHIR NPM packages already present in the database are skipped.
    *
+   * The package is recorded in the database together with its resources, after the files have been
+   * read. An import that raises records nothing, and so does one whose [rootDirectory] does not
+   * exist, so either can be run again.
+   *
    * @return what the import indexed, skipped and failed to read. A package already present in the
-   *   database returns an empty result.
+   *   database returns an empty result, and so does a [rootDirectory] that does not exist.
    */
   suspend fun import(fhirNpmPackage: FhirNpmPackage, rootDirectory: Path): ImportResult {
     if (knowledgeDao.getImplementationGuide(fhirNpmPackage.name, fhirNpmPackage.version) != null) {
       return ImportResult(indexed = 0, skipped = 0, failed = emptyList())
     }
     // TODO: copy the files into storage the knowledge manager owns?
-    val implementationGuideId =
-      knowledgeDao.insert(
-        ImplementationGuideEntity(
-          0L,
-          fhirNpmPackage.canonical ?: "",
-          fhirNpmPackage.name,
-          fhirNpmPackage.version,
-          rootDirectory,
-        )
-      )
     val files =
       withContext(ioDispatcher) { fileSystem.listOrNull(rootDirectory) }
         ?: return ImportResult(indexed = 0, skipped = 0, failed = emptyList())
-    var indexed = 0
+    val resources = mutableListOf<ResourceMetadataEntity>()
     var skipped = 0
     val failed = mutableListOf<Path>()
     files.sorted().forEach { file ->
@@ -137,8 +131,7 @@ internal constructor(
         skipped++
         return@forEach
       }
-      knowledgeDao.insertResource(
-        implementationGuideId,
+      resources +=
         ResourceMetadataEntity(
           0,
           resource.resourceType,
@@ -146,11 +139,19 @@ internal constructor(
           resource.name,
           resource.version,
           file,
-        ),
-      )
-      indexed++
+        )
     }
-    return ImportResult(indexed, skipped, failed)
+    knowledgeDao.insertImplementationGuide(
+      ImplementationGuideEntity(
+        0L,
+        fhirNpmPackage.canonical ?: "",
+        fhirNpmPackage.name,
+        fhirNpmPackage.version,
+        rootDirectory,
+      ),
+      resources,
+    )
+    return ImportResult(resources.size, skipped, failed)
   }
 
   /**

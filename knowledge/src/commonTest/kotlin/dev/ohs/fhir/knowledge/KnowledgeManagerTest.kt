@@ -24,6 +24,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
+import okio.ForwardingFileSystem
+import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -86,6 +88,39 @@ class KnowledgeManagerTest {
 
     assertEquals(1, knowledgeDb.knowledgeDao().getImplementationGuides().size)
     assertEquals(6, knowledgeDb.knowledgeDao().getResources().size)
+  }
+
+  @Test
+  fun shouldImportADirectoryThatDidNotExistAtTheFirstImport() = runTest {
+    val lateFolder = "/anc-cds-late".toPath()
+
+    val first = knowledgeManager.import(fhirNpmPackage, lateFolder)
+    writeResource(lateFolder / "Library-WHOCommon.json", library("WHOCommon", WHO_COMMON_URL))
+    val second = knowledgeManager.import(fhirNpmPackage, lateFolder)
+
+    assertEquals(ImportResult(indexed = 0, skipped = 0, failed = emptyList()), first)
+    assertEquals(ImportResult(indexed = 1, skipped = 0, failed = emptyList()), second)
+  }
+
+  @Test
+  fun shouldImportAgainAfterAnImportThatRaised() = runTest {
+    var listingFails = true
+    val failingOnceFileSystem =
+      object : ForwardingFileSystem(fileSystem) {
+        override fun listOrNull(dir: Path): List<Path>? {
+          if (listingFails) throw IOException("Unable to list $dir")
+          return super.listOrNull(dir)
+        }
+      }
+    val knowledgeManager =
+      knowledgeManager(failingOnceFileSystem, knowledgeDb) { _, _ -> error("no download expected") }
+
+    assertFailsWith<IOException> { knowledgeManager.import(fhirNpmPackage, dataFolder) }
+    assertTrue(knowledgeDb.knowledgeDao().getImplementationGuides().isEmpty())
+    listingFails = false
+    val result = knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    assertEquals(ImportResult(indexed = 6, skipped = 1, failed = emptyList()), result)
   }
 
   @Test
