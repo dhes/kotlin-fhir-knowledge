@@ -77,6 +77,31 @@ class KnowledgeManagerNpmTest {
     assertTrue(downloadedPackages.isEmpty())
   }
 
+  @Test
+  fun shouldRecordTheCanonicalUrlOfThePackageManifest() = runTest {
+    val packageWithCanonical = PACKAGE_3.copy(canonical = CANONICAL)
+    cachePackage(packageWithCanonical, packageFolder(packageWithCanonical))
+
+    knowledgeManager.install(PACKAGE_3)
+
+    assertEquals(CANONICAL, implementationGuideUrl(PACKAGE_3))
+  }
+
+  @Test
+  fun shouldRecordTheCanonicalUrlOfTheCallerWhenThePackageManifestHasNone() = runTest {
+    cachePackage(PACKAGE_3, packageFolder(PACKAGE_3))
+
+    knowledgeManager.install(PACKAGE_3.copy(canonical = CANONICAL))
+
+    assertEquals(CANONICAL, implementationGuideUrl(PACKAGE_3))
+  }
+
+  private suspend fun implementationGuideUrl(fhirNpmPackage: FhirNpmPackage) =
+    knowledgeDb
+      .knowledgeDao()
+      .getImplementationGuide(fhirNpmPackage.name, fhirNpmPackage.version)
+      ?.url
+
   private fun packageFolder(fhirNpmPackage: FhirNpmPackage) =
     NPM_ROOT / "${fhirNpmPackage.name}#${fhirNpmPackage.version}"
 
@@ -90,7 +115,8 @@ class KnowledgeManagerNpmTest {
     val dependency = DEPENDENCIES[fhirNpmPackage]
     val dependencies =
       dependency?.let { ""","dependencies":{"${it.name}":"${it.version}"}""" } ?: ""
-    return """{"name":"${fhirNpmPackage.name}","version":"${fhirNpmPackage.version}"$dependencies}"""
+    val canonical = fhirNpmPackage.canonical?.let { ""","canonical":"$it"""" } ?: ""
+    return """{"name":"${fhirNpmPackage.name}","version":"${fhirNpmPackage.version}"$canonical$dependencies}"""
   }
 
   private companion object {
@@ -98,6 +124,7 @@ class KnowledgeManagerNpmTest {
     val PACKAGE_1 = FhirNpmPackage("package1", "version")
     val PACKAGE_2 = FhirNpmPackage("package2", "version")
     val PACKAGE_3 = FhirNpmPackage("package3", "version")
+    const val CANONICAL = "http://example.org/fhir/package3"
     val DEPENDENCIES = mapOf(PACKAGE_1 to PACKAGE_2, PACKAGE_2 to PACKAGE_3)
   }
 }

@@ -82,7 +82,10 @@ internal constructor(
         try {
           val localFhirNpmPackageMetadata =
             npmFileManager.getLocalFhirNpmPackageMetadata(it.name, it.version)
-          import(it, localFhirNpmPackageMetadata.rootDirectory)
+          import(
+            it.copy(canonical = localFhirNpmPackageMetadata.canonical ?: it.canonical),
+            localFhirNpmPackageMetadata.rootDirectory,
+          )
           install(*localFhirNpmPackageMetadata.dependencies.toTypedArray())
         } catch (e: Exception) {
           Logger.w(e) { "Unable to install package ${it.name} ${it.version}" }
