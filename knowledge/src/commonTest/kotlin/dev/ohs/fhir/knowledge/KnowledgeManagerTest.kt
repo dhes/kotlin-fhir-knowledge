@@ -111,7 +111,30 @@ class KnowledgeManagerTest {
     knowledgeManager.delete(fhirNpmPackage)
 
     assertTrue(knowledgeDb.knowledgeDao().getImplementationGuides().isEmpty())
+    assertTrue(knowledgeDb.knowledgeDao().getResources().isEmpty())
     assertFalse(fileSystem.exists(dataFolder))
+  }
+
+  @Test
+  fun shouldReturnNothingForAnArtifactOfADeletedImplementationGuide() = runTest {
+    knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    knowledgeManager.delete(fhirNpmPackage)
+
+    assertEquals(0, knowledgeManager.loadResources(WHO_COMMON_URL, VERSION).count())
+    assertEquals(0, knowledgeManager.loadResources(WHO_COMMON_URL).count())
+  }
+
+  @Test
+  fun shouldKeepAnIndexedArtifactWhenAnImplementationGuideIsDeleted() = runTest {
+    val file = "/Library-defaultA.json".toPath()
+    writeResource(file, library("defaultA", LIBRARY_A_URL))
+    knowledgeManager.index(file)
+    knowledgeManager.import(fhirNpmPackage, dataFolder)
+
+    knowledgeManager.delete(fhirNpmPackage)
+
+    assertEquals(1, knowledgeManager.loadResources(LIBRARY_A_URL).count())
   }
 
   @Test

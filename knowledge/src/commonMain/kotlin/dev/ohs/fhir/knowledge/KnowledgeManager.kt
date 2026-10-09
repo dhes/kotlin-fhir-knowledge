@@ -265,7 +265,7 @@ internal constructor(
     igDependencies.forEach { igDependency ->
       val igEntity = knowledgeDao.getImplementationGuide(igDependency.name, igDependency.version)
       if (igEntity != null) {
-        knowledgeDao.deleteImplementationGuide(igEntity)
+        knowledgeDao.deleteImplementationGuide(igDependency.name, igDependency.version)
         withContext(ioDispatcher) {
           try {
             fileSystem.deleteRecursively(igEntity.rootDirectory, mustExist = false)
